@@ -18,7 +18,7 @@ app.use(express.json());
 app.post("/webhook", async (req, res) => {
     const data = req.body;
     
-    console.log("Received dataa:", data);
+    console.log("Received dataa:", JSON.stringify(data));
 
   // define your criteria
   const shouldForward = data?.status === "ok" && Number(data?.amount) > 100;
