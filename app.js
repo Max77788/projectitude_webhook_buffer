@@ -1,6 +1,8 @@
 // server.js
 import express from "express";
-import fetch from "node-fetch"; // install with: npm i express node-fetch
+const fetch = (...args) =>
+  import("node-fetch").then(({ default: fetch }) => fetch(...args));
+ // install with: npm i express node-fetch
 import dotenv from "dotenv";
 dotenv.config();
 
