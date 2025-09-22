@@ -21,7 +21,8 @@ app.post("/webhook", async (req, res) => {
     console.log("Received dataa:", JSON.stringify(data));
 
   // define your criteria
-  const shouldForward = data?.status === "ok" && Number(data?.amount) > 100;
+    const shouldForward =
+      data["data"]?.["customer"]?.["traits"]?.["Use AI Agent"].toLowerCase() === "yes" || false;
 
   let forwardStatus;
   if (shouldForward) {
