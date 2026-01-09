@@ -12,22 +12,30 @@ const PORT = process.env.PORT || 3000;
 // set in your environment (or hardcode for quick test)
 const FWD_URL = process.env.FWD_URL || "https://example.com/endpoint";
 
+const NEW_LEAD_URL = "https://projectitudekabeer.app.n8n.cloud/webhook/on-new-lead-came-in";
+
 app.use(express.json());
 
 // webhook endpoint
 app.post("/webhook", async (req, res) => {
     const data = req.body;
+
+    const event_type = data["type"];
+
+    console.log("Event type: ", event_type);
     
-    console.log("Received dataa:", JSON.stringify(data));
+    console.log("Received data:", JSON.stringify(data));
 
   // define your criteria
     const shouldForward =
-      data["data"]?.["customer"]?.["traits"]?.["Use AI Agent"].toLowerCase() === "yes" || false;
+      event_type !== "message_received" || data["data"]?.["customer"]?.["traits"]?.["Use AI Agent"].toLowerCase() === "yes" || false;
+
+  const TARGET_URL = event_type !== "message_received" ? NEW_LEAD_URL : FWD_URL;
 
   let forwardStatus;
   if (shouldForward) {
     try {
-      const r = await fetch(FWD_URL, {
+      const r = await fetch(TARGET_URL, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(data),
