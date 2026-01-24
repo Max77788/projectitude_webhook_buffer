@@ -117,12 +117,18 @@ app.post("/webhook", async (req, res) => {
 
   console.log("Should forward to FWD_URL?", shouldForward);
 
-  const is_send_on_new_lead_url =
-    event_type === "workflow_response_update" &&
-    data?.workflow_id ===
-      "1a3654f6-313a-4245-9ced-f33df3644c8a";
+  const source_ids = ["826392220374062"];
 
-  console.log("Trigger NEW_LEAD_URL?", is_send_on_new_lead_url);
+  /*
+  const is_send_on_new_lead_url =
+    (event_type === "workflow_response_update" &&
+    data?.workflow_id ===
+      "1a3654f6-313a-4245-9ced-f33df3644c8a") ?? (source_ids.includes(data?.customer?.traits?.source_id) && dbIsUseAIAgent === false);
+      */
+
+  const is_send_on_new_lead_url = source_ids.includes(data?.customer?.traits?.source_id) && dbIsUseAIAgent === false;
+
+  console.log("Trigger NEW_LEAD_URL? ", is_send_on_new_lead_url);
 
   let first_forward_status = null;
   if (is_send_on_new_lead_url) {
@@ -176,6 +182,7 @@ app.post("/webhook", async (req, res) => {
   res.json({
     ok: true,
     forwarded: shouldForward,
+    is_send_on_new_lead_url,
     forwardStatus,
     first_forward_status,
   });
