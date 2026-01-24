@@ -1,5 +1,6 @@
 // server.js
 import express from "express";
+import { MongoClient } from "mongodb";
 const fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
@@ -11,6 +12,27 @@ const PORT = process.env.PORT || 3000;
 
 const FWD_URL = process.env.FWD_URL || "https://example.com/endpoint";
 const NEW_LEAD_URL = "https://projectitudekabeer.app.n8n.cloud/webhook/on-new-lead-came-in";
+
+// 🔥 MONGO: connection setup
+const MONGO_URI = process.env.MONGO_URI; // set this to your Mongo connection string
+const MONGO_DB = "n8n-ai-agent-storage";
+const MONGO_COLLECTION = "message_stashing";
+
+let mongoClient;
+
+async function initMongo() {
+  if (!MONGO_URI) {
+    console.error("⚠️ MONGO_URI not set in environment");
+    return;
+  }
+  mongoClient = new MongoClient(MONGO_URI, { useUnifiedTopology: true });
+  await mongoClient.connect();
+  console.log("✅ Connected to MongoDB");
+}
+
+initMongo().catch((err) => {
+  console.error("Mongo connection error:", err);
+});
 
 app.use(express.json());
 
@@ -33,7 +55,6 @@ app.post("/webhook", async (req, res) => {
   console.log("Raw message field:", rawMessage);
   console.log("Raw message type:", typeof rawMessage);
 
-  // Attempt to parse message if it's JSON
   let parsedMessage = null;
   if (typeof rawMessage === "string") {
     try {
@@ -44,7 +65,6 @@ app.post("/webhook", async (req, res) => {
     }
   }
 
-  // Normalize message text
   const messageText =
     parsedMessage?.button_reply?.title ||
     rawMessage ||
@@ -52,30 +72,59 @@ app.post("/webhook", async (req, res) => {
 
   console.log("Normalized message text:", messageText);
 
-  // AI Agent flag (safe access)
-  const useAIAgent =
-    customerTraits?.["Use AI Agent"]?.toLowerCase?.() === "yes";
+  // 🔥 MONGO: lookup phone number
+  let dbIsUseAIAgent = null;
+  try {
+    if (mongoClient?.isConnected()) {
+      const collection = mongoClient
+        .db(MONGO_DB)
+        .collection(MONGO_COLLECTION);
 
-  console.log("Use AI Agent flag:", useAIAgent);
+      const phoneNumber =
+        data?.customer?.channel_phone_number ||
+        data?.data?.customer?.channel_phone_number;
 
-  // Forwarding logic
+      console.log("Looking up phone number:", phoneNumber);
+
+      if (phoneNumber) {
+        const doc = await collection.findOne({
+          phone_number: phoneNumber,
+        });
+
+        console.log("Mongo lookup result:", doc);
+
+        if (doc && typeof doc.is_use_ai_agent !== "undefined") {
+          dbIsUseAIAgent = doc?.is_use_ai_agent || false;
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Mongo lookup error:", err);
+  }
+
+  console.log("DB is_use_ai_agent:", dbIsUseAIAgent);
+
+  const useAIAgentFromTrait =
+    customerTraits?.["Use AI Agent"]?.toLowerCase?.() !== "no";
+
+  // Decide AI use — database takes precedence if set
+  const useAIAgent = useAIAgentFromTrait !== "no" && dbIsUseAIAgent;
+
+  console.log("Final Use AI Agent flag:", useAIAgent);
+
   const shouldForward =
     event_type !== "message_received" || useAIAgent;
 
   console.log("Should forward to FWD_URL?", shouldForward);
 
-  /* New lead condition
   const is_send_on_new_lead_url =
-    typeof messageText === "string" &&
-    messageText.toLowerCase().trim() === "hello! can i get more info on this?";
-    */
-
-  const is_send_on_new_lead_url = event_type === "workflow_response_update" && data?.workflow_id === "1a3654f6-313a-4245-9ced-f33df3644c8a";
+    event_type === "workflow_response_update" &&
+    data?.workflow_id ===
+      "1a3654f6-313a-4245-9ced-f33df3644c8a";
 
   console.log("Trigger NEW_LEAD_URL?", is_send_on_new_lead_url);
 
   let first_forward_status = null;
-
   if (is_send_on_new_lead_url) {
     console.log("Sending payload to NEW_LEAD_URL:", NEW_LEAD_URL);
     try {
@@ -93,10 +142,12 @@ app.post("/webhook", async (req, res) => {
   }
 
   let forwardStatus = null;
-
   if (shouldForward && !is_send_on_new_lead_url) {
     console.log("Sending payload to FWD_URL:", FWD_URL);
     try {
+
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
       const r = await fetch(FWD_URL, {
         method: "POST",
         headers: { "content-type": "application/json" },
