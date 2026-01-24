@@ -64,10 +64,13 @@ app.post("/webhook", async (req, res) => {
 
   console.log("Should forward to FWD_URL?", shouldForward);
 
-  // New lead condition
+  /* New lead condition
   const is_send_on_new_lead_url =
     typeof messageText === "string" &&
     messageText.toLowerCase().trim() === "hello! can i get more info on this?";
+    */
+
+  const is_send_on_new_lead_url = event_type === "workflow_response_update" && data?.workflow_id === "1a3654f6-313a-4245-9ced-f33df3644c8a";
 
   console.log("Trigger NEW_LEAD_URL?", is_send_on_new_lead_url);
 
