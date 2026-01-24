@@ -94,7 +94,7 @@ app.post("/webhook", async (req, res) => {
         console.log("Mongo lookup result:", doc);
 
         if (doc && typeof doc.is_use_ai_agent !== "undefined") {
-          dbIsUseAIAgent = doc?.is_use_ai_agent || false;
+          dbIsUseAIAgent = doc?.is_use_ai_agent ?? false;
         }
       }
     }
