@@ -75,7 +75,7 @@ app.post("/webhook", async (req, res) => {
   // 🔥 MONGO: lookup phone number
   let dbIsUseAIAgent = null;
   try {
-    if (mongoClient?.isConnected()) {
+    if (!!mongoClient) {
       const collection = mongoClient
         .db(MONGO_DB)
         .collection(MONGO_COLLECTION);
