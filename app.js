@@ -26,11 +26,29 @@ app.post("/webhook", async (req, res) => {
     
     console.log("Received data:", JSON.stringify(data));
 
+    const message = data?.message?.message || null;
+
   // define your criteria
     const shouldForward =
       event_type !== "message_received" || data["data"]?.["customer"]?.["traits"]?.["Use AI Agent"].toLowerCase() === "yes" || false;
 
-  const TARGET_URL = event_type !== "message_received" ? NEW_LEAD_URL : FWD_URL;
+  const is_send_on_new_lead_url = message.toLowerCase() === "hello! can I get more info on this?"; 
+
+  if (is_send_on_new_lead_url) {
+    try {
+      const r = await fetch(NEW_LEAD_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      forwardStatus = r.status;
+    } catch (err) {
+      console.error("Forward error:", err);
+      forwardStatus = "error";
+    }
+  }
+  
+  const TARGET_URL = FWD_URL;
 
   let forwardStatus;
   if (shouldForward) {
