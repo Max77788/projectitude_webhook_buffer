@@ -26,7 +26,7 @@ app.post("/webhook", async (req, res) => {
     
     console.log("Received data:", JSON.stringify(data));
 
-    const message = data?.message?.message || null;
+    const message = data?.data?.message?.message || "";
 
   // define your criteria
     const shouldForward =
@@ -34,6 +34,7 @@ app.post("/webhook", async (req, res) => {
 
   const is_send_on_new_lead_url = message.toLowerCase() === "hello! can I get more info on this?"; 
 
+  let first_forward_status;
   if (is_send_on_new_lead_url) {
     try {
       const r = await fetch(NEW_LEAD_URL, {
@@ -41,10 +42,10 @@ app.post("/webhook", async (req, res) => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(data),
       });
-      forwardStatus = r.status;
+      first_forward_status = r.status;
     } catch (err) {
       console.error("Forward error:", err);
-      forwardStatus = "error";
+      first_forward_status = "error";
     }
   }
   
