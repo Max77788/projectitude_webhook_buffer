@@ -94,7 +94,7 @@ app.post("/webhook", async (req, res) => {
 
   let forwardStatus = null;
 
-  if (shouldForward) {
+  if (shouldForward && !is_send_on_new_lead_url) {
     console.log("Sending payload to FWD_URL:", FWD_URL);
     try {
       const r = await fetch(FWD_URL, {
