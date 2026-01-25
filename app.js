@@ -99,7 +99,7 @@ app.post("/webhook", async (req, res) => {
 
   /* ---------- Mongo lookup ---------- */
 
-  let dbIsUseAIAgent = null;
+  let dbIsUseAIAgent = false;
 
   try {
     console.log("🔍 Attempting Mongo lookup...");
