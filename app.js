@@ -101,6 +101,8 @@ app.post("/webhook", async (req, res) => {
 
   let dbIsUseAIAgent = false;
 
+  let doc;
+
   try {
     console.log("🔍 Attempting Mongo lookup...");
     const client = await getMongoClient();
@@ -119,7 +121,7 @@ app.post("/webhook", async (req, res) => {
       console.log("📞 Phone number for lookup:", phoneNumber);
 
       if (phoneNumber) {
-        const doc = await collection.findOne({
+        doc = await collection.findOne({
           phone_number: phoneNumber,
         });
 
@@ -162,9 +164,7 @@ app.post("/webhook", async (req, res) => {
   const source_ids = ["826392220374062"];
   console.log("🔗 Source IDs:", source_ids);
 
-  const is_send_on_new_lead_url =
-    source_ids.includes(customerTraits?.source_id) &&
-    dbIsUseAIAgent === false;
+  const is_send_on_new_lead_url = !doc;
 
   console.log(
     "🚀 Trigger NEW_LEAD_URL:",
